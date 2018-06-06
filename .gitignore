@@ -102,3 +102,16 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+bin
+log
+lib
+data
+*.swp
+*.tags
+makeit.err
+*makeit.err*
+*.pyc
+*.log
+*.out
+*.err

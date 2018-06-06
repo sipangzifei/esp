@@ -1,0 +1,338 @@
+# -*- coding: UTF-8 -*-
+
+
+from sailog  import *
+from saiconf import *
+from saiutil import *
+from saidb   import *
+
+from myfunc  import *
+
+
+def get_map_where_str(_task_list):
+    where_section = ""
+
+    tmp = ""
+    for task in _task_list:
+        task = task.strip()
+        log_debug("-- [%s] --", task)
+
+        if len(tmp) > 0:
+            tmp += ", "
+
+        tmp += "'%s'" % (task)
+
+    if len(tmp) > 0:
+        where_section = "where task_id in (%s)" % (tmp)
+
+    return where_section
+
+
+# select distinct res_type, res_name, res_no from est_taskid_map where task_id in ('task3')
+def get_map_sql(_task_list):
+    sql = ""
+
+    where_section = get_map_where_str(_task_list)
+
+    sql = "select distinct task_id, res_type, res_name, res_no from est_taskid_map %s order by 1, 2, 3" % (where_section)
+
+    return sql
+
+
+# 
+def get_elem_log_list(_task_id, _elem_name, _elem_id, _cursor):
+
+    sql = """select * from est_element_his 
+where task_id = '%s' and elem_name = '%s' and elem_id = '%s' 
+order by oper_date_time""" % (_task_id, _elem_name, _elem_id)
+    # log_debug("log: %s", sql)
+
+    _cursor.execute(sql)
+
+    listx = _cursor.fetchall()
+
+    return listx
+
+
+def get_elem_sql(_elem_name, _elem_id):
+
+    sql = "select * from est_element where elem_name = '%s' and elem_id = '%s' " % (_elem_name, _elem_id)
+
+    return sql
+
+
+
+def compare_two_row(_row1, _row2, _table_config):
+
+    buffer = ""
+    buffer_list = []
+    # Get config list
+    key_list, cmp_list, dis_list = get_config_list(_table_config)
+    if len(key_list) == 0:
+        log_error("sorry, please config cnf/my.cnf KEY=xxx")
+    elif len(cmp_list) == 0:
+        log_error("sorry, please config cnf/my.cnf CMP=xxx")
+    else:
+        # log_debug("%s", cmp_list)
+        pass
+
+    key_str = ""
+    for column in key_list:
+        column = column.strip()
+        v      = _row1[column].strip()
+        if len(key_str) > 0:
+            key_str += "+"
+        key_str += "%s" % (v)
+
+    for column in cmp_list:
+        column = column.strip()
+        # log_debug('column = %s', column)
+        v1 = _row1[column]
+        v2 = _row2[column]
+        if isinstance(v1, int):
+            # log_debug("---int")
+            pass
+        elif isinstance(v1, str):
+            # log_debug("---string")
+            pass
+        elif isinstance(v1, float):
+            # log_debug("---float")
+            pass
+        elif isinstance(v1, bytes):
+            # log_debug("---bytes")
+            pass
+        elif isinstance(v1, unicode):
+            # log_debug("---unicode")
+            v1 = v1.rstrip().encode("gbk")
+            v2 = v2.rstrip().encode("gbk")
+        elif v1 is None:
+            # log_debug("---%s: None",  column)
+            pass
+        else:
+            log_info("---other")
+            log_info('---type = %s', type(v1))
+
+        # log_debug('---[%s] : [%s]',  v1, v2)
+
+        if v1 != v2:
+            log_info('>>> [%s] %s: (%s => %s)', key_str, column, v1, v2)
+            buffer = "%s, %s, %s" % (column, v1, v2)
+            buffer_list.append(buffer)
+            pass
+        else:
+            # log_debug('---the same[%s] : [%s]', v1, v2)
+            pass
+
+    return buffer_list
+
+
+def generate_delete_dml(_row, _table_config):
+
+    buffer = ""
+
+    # Get config list
+    key_list, cmp_list, dis_list = get_config_list(_table_config)
+    if len(key_list) == 0:
+        log_error("sorry, please config cnf/my.cnf KEY=xxx")
+    elif len(cmp_list) == 0:
+        log_error("sorry, please config cnf/my.cnf CMP=xxx")
+    else:
+        # log_debug("%s", cmp_list)
+        pass
+
+    key_str = ""
+    for column in key_list:
+        column = column.strip()
+        v      = _row[column].strip()
+        if len(key_str) > 0:
+            key_str += "+"
+        key_str += "%s" % (v)
+
+    buffer  = "%s, %s, %s" % (column, v1, v2)
+
+    return ""
+
+
+
+def get_next_record(_row, _cursor):
+    elem_id   = _row['elem_id']
+    elem_name = _row['elem_name']
+    oper_date_time = _row['oper_date_time']
+
+    # log
+    sql = "select top 1 * from est_element_his where elem_name='%s' and oper_date_time > '%s'  order by oper_date_time" % (elem_name, oper_date_time)
+    log_debug("%s", sql)
+    _cursor.execute(sql)
+    list1 = _cursor.fetchall()
+    if len(list1) == 0:
+        log_debug("NOT found in log-table")
+        sql = get_elem_sql(elem_name, elem_id)
+        log_debug("%s", sql)
+
+        _cursor.execute(sql)
+        list1 = _cursor.fetchall()
+    else:
+        log_debug("found in log-table")
+        pass
+
+
+    return list1
+
+
+# row is of est_taskid_map
+def deal_element(_row, _cursor):
+    content = ""
+
+    task_id     = _row['task_id'].strip()
+    elem_name   = _row['res_name'].strip()
+    elem_id     = _row['res_no'].strip()
+    table_name  = _row['res_type'].strip()
+
+
+    log_debug("task_id   = [%s]", task_id)
+    log_debug("elem_id   = [%s]", elem_id)
+    log_debug("elem_name = [%s]", elem_name)
+    log_debug("table     = [%s]", table_name)
+
+    # query record from LOG table
+    list2 = get_elem_log_list(task_id, elem_name, elem_id, _cursor)
+    if len(list2) == 0:
+        log_debug("not found in log-table: %s, %s", task_id, elem_name)
+        return content
+
+
+    # step1: compare within log table
+    buffer = ""
+    last_row = {}
+    for row in list2:
+        log_debug("------------------------------------------------------------------")
+        oper_type      = row['oper_type']
+        oper_date_time = row['oper_date_time']
+        log_debug('is %s', oper_type)
+        log_debug('opertime: %s', oper_date_time)
+
+        buffer = ""
+        buffer_list = []
+
+        if len(last_row) > 0:
+            last_oper_type = last_row['oper_type']
+            log_debug('last_row: %s -- %s', last_oper_type, last_row['oper_date_time'])
+            if last_oper_type == 'update':
+                # consecutive 'update'
+                log_debug('compare two rows')
+                buffer_list = compare_two_row(last_row, row, table_name)
+
+                # format to submission
+                for item in buffer_list:
+                    buffer = item
+                    buffer = "%s, %s, %s, %s, %s, %s" % (oper_date_time, task_id, 'update', elem_name, table_name, buffer)
+                    content += "%s\n" % (buffer)
+
+        else:
+            log_debug('first row')
+
+        # format to submission
+        if oper_type == 'insert':
+            buffer = "%s, %s, %s, %s, %s" % (oper_date_time, task_id, oper_type, elem_name, table_name)
+            content += "%s\n" % (buffer)
+        elif oper_type == 'delete':
+            buffer = "%s, %s, %s, %s, %s" % (oper_date_time, task_id, oper_type, elem_name, table_name)
+            content += "%s\n" % (buffer)
+
+
+        # it's ensured the 'last-row' must be 'update' clause.
+        last_row = row
+
+
+    # step1
+
+
+    # step2: the last record of log
+    if oper_type == "update":
+        # update: compare with next row: either log-table or meta table 
+        buffer = ""
+        buffer_list = []
+        sql = get_elem_sql(elem_name, elem_id)
+        log_debug("cur: %s", sql)
+
+        _cursor.execute(sql)
+
+        list3 = get_next_record(last_row, _cursor)
+        if len(list3) == 0:
+            log_error("error: not found in meta table")
+            return content
+
+        row = list3[0]
+        # log_debug("meta: %s", row)
+        buffer_list = compare_two_row(last_row, row, table_name)
+
+        # format to submission
+        for item in buffer_list:
+            buffer = item
+            buffer = "%s, %s, %s, %s, %s, %s" % (oper_date_time, task_id, oper_type, elem_name, table_name, buffer)
+            content += "%s\n" % (buffer)
+    elif oper_type == "delete":
+        # delete: processed in the loop of step1 already.
+        log_debug("the last is delete")
+        pass
+    elif oper_type == "insert":
+        # insert: processed in the loop of step1 already.
+        log_debug("the last is insert")
+        pass
+    else:
+        log_error("error: invalid oper_type: %s", oper_type)
+    # step2
+
+    return content
+
+
+
+
+def worker():
+    content = ""
+
+    file_name = "submission.%s.txt" % (sai_get_today())
+    file_path = "%s/data/%s" % (os.getenv('ESP_HOME'), file_name)
+
+    fo = open(file_path, "w")
+
+    conn = db_init()
+
+    cursor = conn.cursor(as_dict=True)
+
+    task_list = ['task1', 'task2']
+    task_list = ['task3']
+    task_list = ['task2', 'task3']
+    task_list = ['task1']
+    task_list = ['task1', 'task2', 'task3']
+    task_list = ['task1', 'task3']
+    task_list = ['task2']
+    sql = get_map_sql(task_list)
+    log_debug(sql)
+
+    cursor.execute(sql)
+
+    list1 = cursor.fetchall()
+
+    for row in list1:
+        log_debug("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        res_type = row['res_type'].strip()
+        #log_debug('row = %s', (row))
+        if res_type == 'est_element':
+            # log_debug("is element")
+            content = deal_element(row, cursor)
+            if len(content) > 0:
+                log_debug("content\n%s", content)
+                fo.write(content)
+        else:
+            log_debug("other resource")
+
+    conn.close()
+    fo.close()
+
+
+# main()
+if __name__=="__main__":
+    sailog_set("submission.log")
+    worker()
+

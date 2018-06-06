@@ -1,0 +1,7 @@
+__GDTA_ITEMDATA_LENGTH|Type=i|MaxLen=1|Precision=0|Default= |
+__GDTA_SVCNAME|Type=s|MaxLen=32|Precision=0|Default= |
+__GDTA_TCP_ADDR|Type=s|MaxLen=30|Precision=0|Default= |
+__ITEMDATA|Type=b|MaxLen=9999|Precision=0|Default= |
+__ITEMDATA_LENGTH|Type=i|MaxLen=1|Precision=0|Default= |
+__PACKDATA|Type=b|MaxLen=9999|Precision=0|Default= |
+__SVCNAME|Type=s|MaxLen=32|Precision=0|Default= |

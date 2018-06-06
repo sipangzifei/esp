@@ -1,0 +1,15 @@
+
+alias cdd='cd ${HOME}/esp/data'
+alias cde='cd ${HOME}/esp/etc'
+alias cdc='cd ${HOME}/esp/cnf'
+alias cdl='cd ${HOME}/esp/log'
+alias cds='cd ${HOME}/esp/src'
+
+alias cdsql='cd ${HOME}/esp/sql'
+
+alias cdsc='cd ${HOME}/esp/src/common'
+
+alias cgrep='find . -name "*.py"|xargs grep'
+
+alias mktag='cd ${HOME}/esp && ctags -f .tags -R * && cd - >/dev/null'
+

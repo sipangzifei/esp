@@ -1,0 +1,95 @@
+
+
+# func_id 
+# step1. get RES-name from DEV
+# step2. get RES-id   from SIT
+def convert_res_id(_table, _log_row, _src_cursor, _tgt_cursor):
+    new_res_id = ''
+
+    # select func_id from est_func where func_name = 'get_time'
+
+    table_name  = ''  # est_func
+    res_id_col  = ''  # func_id
+    res_name_col= ''  # func_name
+    res_name_val= ''  # as 'get_time'
+
+
+    if not MyCtx.sub_res_id_map.has_key(_sub_table):
+        log_error('error: not found: %s', _sub_table)
+        return ''
+    else:
+        val_list    = MyCtx.sub_res_id_map[_sub_table]
+        table_name  = val_list[0]
+        res_id_col  = val_list[1]
+        res_name_col= val_list[2]
+        res_name_val= sub_get_res_name(_sub_table, _log_row, _src_cursor)
+
+    # log_debug('%s, %s, %s', res_id_col, res_name_col, res_name_val)
+
+    sql = "select %s from %s where %s = '%s'" % (res_id_col, table_name, res_name_col, res_name_val)
+    # log_debug('%s', sql)
+
+    _tgt_cursor.execute(sql)
+    list0 = _tgt_cursor.fetchall()
+    if len(list0) <= 0:
+        log_error('error: no data: %s', sql)
+        return res_name
+
+    row = list0[0]
+    new_res_id = row[res_id_col]
+    log_debug('res_id [%s => %s]', res_id_col, new_res_id)
+
+    _log_row[res_id_col] = new_res_id
+
+    return new_res_id
+
+
+
+
+
+# func_id 
+# step1. get RES-name from DEV
+# step2. get RES-id   from SIT
+def query_current_res_id(_sub_table, _log_row, _src_cursor, _tgt_cursor):
+    new_res_id = ''
+
+    # select func_id from est_func where func_name = 'get_time'
+
+    table_name  = ''  # est_func
+    res_id_col  = ''  # func_id
+    res_name_col= ''  # func_name
+    res_name_val= ''  # as 'get_time'
+
+
+    if not MyCtx.sub_res_id_map.has_key(_sub_table):
+        log_error('error: not found: %s', _sub_table)
+        return ''
+    else:
+        val_list    = MyCtx.sub_res_id_map[_sub_table]
+        table_name  = val_list[0]
+        res_id_col  = val_list[1]
+        res_name_col= val_list[2]
+        res_name_val= sub_get_res_name(_sub_table, _log_row, _src_cursor)
+
+    # log_debug('%s, %s, %s', res_id_col, res_name_col, res_name_val)
+
+    sql = "select %s from %s where %s = '%s'" % (res_id_col, table_name, res_name_col, res_name_val)
+    # log_debug('%s', sql)
+
+    _tgt_cursor.execute(sql)
+    list0 = _tgt_cursor.fetchall()
+    if len(list0) <= 0:
+        log_error('error: no data: %s', sql)
+        return res_name
+
+    row = list0[0]
+    new_res_id = row[res_id_col]
+    log_debug('res_id [%s => %s]', res_id_col, new_res_id)
+
+    _log_row[res_id_col] = new_res_id
+
+    return new_res_id
+
+
+
+

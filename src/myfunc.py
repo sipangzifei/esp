@@ -34,21 +34,55 @@ class MyCtx():
     # export  ########################################################
 
     # primary key of table
-    main_table_key_map = {
+    table_key_map = {
+        'est_element'       : ['elem_id'],
+        'est_func'          : ['func_id'],
+        'est_enum'          : ['enum_id'],
+        'est_format'        : ['fmt_id'],
+        'est_flow'          : ['flow_id'],
+        'est_flw_end'       : ['flow_id'],
+        'est_flow_step'     : ['flow_id'],
+    }
+
+
+    # primary key and unique-index of table
+    main_table_key_map2 = {
         'est_element'       : ['elem_name', 'elem_id'],
         'est_func'          : ['func_name', 'func_id'],
         'est_enum'          : ['enum_name', 'enum_id'],
         'est_format'        : ['fmt_name',  'fmt_id'],
+        'est_flow'          : ['flow_name', 'flow_id'],
     }
 
 
     # primary key for sub-tables
     subt_table_key_map = {
+        'est_flw_end'       : ['flow_id', 'step_no'],
+        'est_flow_step'     : ['flow_id', 'step_no'],
+    }
+
+
+    # primary key group for sub-tables
+    subt_table_group_key_map = {
         'est_func_param'    : ['func_id'],
+
         'est_enum_value'    : ['enum_id'],
+
         'est_fmt_item'      : ['fmt_id'],
         'est_sign_item'     : ['fmt_id'],
+
+        'est_flw_end'       : ['flow_id'],
+        'est_flow_step'     : ['flow_id'],
     }
+
+
+    main_subt_table_map = {
+        'est_func'          : ['est_func_param'],
+        'est_enum'          : ['est_enum_value'],
+        'est_format'        : ['est_fmt_item', 'est_sign_item'],
+        'est_flow'          : ['est_flw_end', 'est_flow_step'],
+    }
+
 
     ####################################################### export  ##
     ##################################################################
@@ -56,11 +90,11 @@ class MyCtx():
 
 
     # for update
-    update_list = ['res_table_class', 'res_table', 'oper_id', 'oper_date_time', 'task_id', 'oper_type',
+    update_list = ['res_table_class', 'res_table', 'oper_id', 'oper_date_time', 'task_id', 'oper_type_log',
     'res_name', 'res_column', 'src_val', 'dst_val']
 
     # for insert/delete
-    insert_list = ['res_table_class', 'res_table', 'oper_id', 'oper_date_time', 'task_id', 'oper_type',
+    insert_list = ['res_table_class', 'res_table', 'oper_id', 'oper_date_time', 'task_id', 'oper_type_log',
     'res_name' ]
 
 
@@ -168,6 +202,19 @@ class MyCtx():
         print('inited')
 
 
+
+# get compare list
+def get_compare_list(_table):
+    # ---------------------------------- #
+    cmp_str  = sai_conf_get(_table, "CMP")
+
+    cmp_list = []
+    cmp_list = cmp_str.split(',')
+
+
+    return cmp_list
+
+
 # get CONFIG list
 def get_config_list(_table):
     # ---------------------------------- #
@@ -204,23 +251,6 @@ def trim_list(_list):
     return _list
 
 
-#
-def get_type_name_id(_table):
-
-    my_key = _table
-
-    if MyCtx.main_table_key_map.has_key(my_key):
-        key_list = MyCtx.main_table_key_map[my_key]
-    else:
-        log_error('error: [%s] not configured', my_key)
-        return -1, -1
-
-    type_name = key_list[0]
-    type_id   = key_list[1]
-
-    return type_name, type_id
-
-
 
 # TODO: more elegant
 def get_type_name_id0(_table):
@@ -236,6 +266,56 @@ def get_type_name_id0(_table):
     type_id   = key_list[1]
 
     return type_name, type_id
+
+
+#
+def get_type_name_id1(_table):
+
+    my_key = _table
+
+    if MyCtx.main_table_key_map.has_key(my_key):
+        key_list = MyCtx.main_table_key_map[my_key]
+    else:
+        log_error('error: [%s] not configured', my_key)
+        return -1, -1
+
+    type_name = key_list[0]
+    type_id   = key_list[1]
+
+    return type_name, type_id
+
+
+#
+def get_type_id(_table):
+
+    my_key = _table
+
+    if MyCtx.table_key_map.has_key(my_key):
+        key_list = MyCtx.table_key_map[my_key]
+    else:
+        log_error('error: [%s] not configured', my_key)
+        return -1
+
+    type_id   = key_list[0]
+
+    return type_id
+
+
+#
+def get_sub_type_id(_table):
+
+    my_key = _table
+
+    if MyCtx.table_key_map.has_key(my_key):
+        key_list = MyCtx.table_key_map[my_key]
+    else:
+        log_error('error: [%s] not configured', my_key)
+        return -1
+
+    type_id   = key_list[0]
+
+    return type_id
+
 
 
 def get_data_file_path(_file_name):

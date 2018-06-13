@@ -75,8 +75,30 @@ def get_elem_next_record(_row, _table):
 
 
 
-# 2018-5-17
+# 2018-6-12
 def get_res_log_list(_task_id, _res_name, _res_id, _table):
+    log_table = '%s_log' % (_table)
+
+    # get id as 'elem_id'
+    type_id = get_type_id(_table)
+    if type_id == -1:
+        log_error('error: get_type_id')
+        return []
+
+    sql = """select * from %s
+where task_id = '%s' and %s = '%s' 
+order by oper_id""" % (log_table, _task_id, type_id, _res_id)
+    # log_debug("log: %s", sql)
+
+    MyCtx.cursorX.execute(sql)
+
+    listx = MyCtx.cursorX.fetchall()
+
+    return listx
+
+
+# 2018-5-17
+def get_res_log_list0(_task_id, _res_name, _res_id, _table):
     log_table = '%s_log' % (_table)
 
     # get name, id as 'elem_name', 'elem_id'
@@ -108,7 +130,7 @@ order by oper_id""" % (log_table, _task_id, type_name, _res_name, type_id, _res_
 #
 # input
 #   _row is of LOG-table
-def get_res_next_record(_row, _table):
+def get_res_next_record0(_row, _table):
 
     # res-table-name, log-table-name
     res_table = _table
@@ -135,6 +157,106 @@ def get_res_next_record(_row, _table):
         log_debug("NOT found in LOG-table, let's query in RES-table")
         # res
         sql = "select * from %s where %s = '%s' and %s = '%s' " % (res_table, type_name, res_name, type_id, res_id)
+        # log_debug("%s", sql)
+
+        MyCtx.cursorX.execute(sql)
+        list1 = MyCtx.cursorX.fetchall()
+    else:
+        log_debug("Found in LOG-table")
+        pass
+
+
+    return list1
+
+
+
+# 2018-6-12
+# function:
+#   get the next record after input
+#   must has value, or failure
+#
+# implement
+#   1. query log table 
+#   2. query res table
+#
+# input
+#   _row is of LOG-table
+def get_res_next_record(_row, _table):
+
+    # res-table-name, log-table-name
+    res_table = _table
+    log_table = '%s_log' % (_table)
+
+    # get name, id as 'elem_id'
+    type_id = get_type_id(_table)
+    if type_id == -1:
+        log_error('error: get_type_id')
+        return []
+
+    res_id          = _row[type_id]
+    oper_date_time  = _row['oper_date_time']
+    oper_id         = _row['oper_id']
+
+
+    # log
+    sql = "select top 1 * from %s where  %s = '%s' and oper_id > %s  order by oper_id" % (log_table, type_id, res_id, oper_id)
+    # log_debug("%s", sql)
+    MyCtx.cursorX.execute(sql)
+    list1 = MyCtx.cursorX.fetchall()
+    if len(list1) == 0:
+        log_debug("NOT found in LOG-table, let's query in RES-table")
+        # res
+        sql = "select * from %s where  %s = '%s' " % (res_table, type_id, res_id)
+        # log_debug("%s", sql)
+
+        MyCtx.cursorX.execute(sql)
+        list1 = MyCtx.cursorX.fetchall()
+    else:
+        log_debug("Found in LOG-table")
+        pass
+
+
+    return list1
+
+
+# 2018-6-12
+# function: sub-table
+#   get the next record after input
+#   must has value, or failure
+#
+# implement
+#   1. query log table 
+#   2. query res table
+#
+# input
+#   _row is of LOG-table
+def get_res_next_sub_record(_row, _table):
+
+    # res-table-name, log-table-name
+    res_table = _table
+    log_table = '%s_log' % (_table)
+
+    # get id and sub_id as 'flow_id', 'step_no'
+    type_id, sub_id = get_sub_type_id(_table)
+    if type_id == -1:
+        log_error('error: get_sub_type_id')
+        return []
+
+    res_id          = _row[type_id]
+    res_sub_id      = _row[sub_id]
+    oper_date_time  = _row['oper_date_time']
+    oper_id         = _row['oper_id']
+
+
+    # log
+    sql = "select top 1 * from %s where %s = '%s' and %s = '%s' and oper_id > %s  order by oper_id" % (log_table, sub_id, res_sub_id, type_id, res_id, oper_id)
+    # log_debug("%s", sql)
+    MyCtx.cursorX.execute(sql)
+    list1 = MyCtx.cursorX.fetchall()
+    if len(list1) == 0:
+        log_debug("NOT found in LOG-table, let's query in RES-table")
+        # res
+        sql = "select * from %s where %s = '%s' and %s = '%s' " % (res_table, sub_id, res_sub_id, type_id, res_id)
         # log_debug("%s", sql)
 
         MyCtx.cursorX.execute(sql)
@@ -174,14 +296,16 @@ def compare_two_row(_row1, _row2, _table_config):
     buffer = ""
     buffer_list = []
     # Get config list
-    key_list, cmp_list, dis_list = get_config_list(_table_config)
+
+    key_list = MyCtx.table_key_map[_table_config]
     if len(key_list) == 0:
-        log_error("sorry, please config cnf/my.cnf KEY=xxx")
-    elif len(cmp_list) == 0:
-        log_error("sorry, please config cnf/my.cnf CMP=xxx")
-    else:
-        # log_debug("%s", cmp_list)
-        pass
+        log_error("error, please config MyCtx.table_key_map")
+        return None
+
+    cmp_list = get_compare_list(_table_config)
+    if len(cmp_list) == 0:
+        log_error("error, please config cnf/my.cnf CMP=xxx")
+        return None
 
     key_str = ""
     for column in key_list:
@@ -263,7 +387,7 @@ def deal_element(_row):
     next_row = {}
     for row in list2:
         log_debug("------------------------------------------------------------------")
-        oper_type      = row['oper_type']
+        oper_type      = row['oper_type_log']
         oper_date_time = row['oper_date_time']
         oper_id        = row['oper_id']
         log_debug('is %s', oper_type)
@@ -288,7 +412,7 @@ def deal_element(_row):
             next_row = list3[0]
 
             # 'meta' means got the row from RES-table, instead of LOG-table
-            next_oper_type      = next_row.get('oper_type',      'meta')
+            next_oper_type      = next_row.get('oper_type_log',  'meta')
             next_oper_date_time = next_row.get('oper_date_time', 'meta')
             next_oper_id        = next_row.get('oper_id',        0)
             log_debug('next_row: %s -- %s -- %s', next_oper_type, next_oper_date_time, next_oper_id)
@@ -346,10 +470,10 @@ def deal_resource2(_row):
     next_row = {}
     for row in list2:
         log_debug("------------------------------------------------------------------")
-        oper_type      = row['oper_type']
+        oper_type      = row['oper_type_log']
         oper_date_time = row['oper_date_time']
         oper_id        = row['oper_id']
-        log_debug('is %s', oper_type)
+        log_debug('is %s, %s', oper_type, oper_id)
         # log_debug('opertime: %s', oper_date_time)
 
         buffer = ""
@@ -371,7 +495,7 @@ def deal_resource2(_row):
             next_row = list3[0]
 
             # 'meta' means got the row from RES-table, instead of LOG-table
-            next_oper_type      = next_row.get('oper_type',      'meta')
+            next_oper_type      = next_row.get('oper_type_log',  'meta')
             next_oper_date_time = next_row.get('oper_date_time', 'meta')
             next_oper_id        = next_row.get('oper_id',        0)
             log_debug('next_row: %s -- %s -- %s', next_oper_type, next_oper_date_time, next_oper_id)
@@ -402,15 +526,37 @@ def deal_resource2(_row):
 
 
 # 2018-5-21
-def get_sub_type_name_id(_table):
+# 2018-6-12
+def get_sub_type_id(_table):
+
+    key_column = ''
+    sub_key    = ''
+
+    my_key = _table
+
+    if MyCtx.subt_table_key_map.has_key(my_key):
+        sub_key_list= MyCtx.subt_table_key_map[my_key]
+        key_column  = sub_key_list[0]
+        sub_key     = sub_key_list[1]
+    else:
+        log_error("error: not found: [%s]", my_key)
+        key_column = -1
+        sub_key    = -1
+
+
+    return key_column, sub_key
+
+
+# 2018-6-12
+def get_sub_type_id_group(_table):
 
     key_column = ''
 
     my_key = _table
 
-    if MyCtx.subt_table_key_map.has_key(my_key):
-        key_list = MyCtx.subt_table_key_map[my_key]
-        key_column = key_list[0]
+    if MyCtx.subt_table_group_key_map.has_key(my_key):
+        sub_key_list= MyCtx.subt_table_group_key_map[my_key]
+        key_column  = sub_key_list[0]
     else:
         log_error("error: not found: [%s]", my_key)
         key_column = -1
@@ -420,11 +566,12 @@ def get_sub_type_name_id(_table):
 
 
 # 2018-5-21
+# 2018-6-12
 def get_sub_res_log_list(_task_id, _res_id, _table):
     log_table = '%s_log' % (_table)
 
     # get id-name as 'func_id'
-    sub_type_id = get_sub_type_name_id(_table)
+    sub_type_id = get_sub_type_id_group(_table)
     log_debug('sub-type: %s', sub_type_id)
 
     sql = """select * from %s
@@ -469,7 +616,7 @@ def deal_subtype_resource(_row):
     next_row = {}
     for row in list2:
         log_debug('$'*100)
-        oper_type      = row['oper_type']
+        oper_type      = row['oper_type_log']
         oper_date_time = row['oper_date_time']
         oper_id        = row['oper_id']
         log_debug('is %s', oper_type)
@@ -485,8 +632,34 @@ def deal_subtype_resource(_row):
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name)
             content += "%s\n" % (buffer)
         elif oper_type == 'update':
-            log_error('error: invalid operation as update: %s', oper_type)
-            return ""
+            log_error('warn: invalid operation as update: %s', oper_type)
+            #  get-next-row
+            list3 = get_res_next_sub_record(row, table_name)
+            if len(list3) == 0:
+                log_error("error: sub-get_res_next_sub_record: not data")
+                return ""
+
+            next_row = list3[0]
+
+            # 'meta' means got the row from RES-table, instead of LOG-table
+            next_oper_type      = next_row.get('oper_type_log',  'meta')
+            next_oper_date_time = next_row.get('oper_date_time', 'meta')
+            next_oper_id        = next_row.get('oper_id',        0)
+            log_debug('sub-next_row: %s -- %s -- %s', next_oper_type, next_oper_date_time, next_oper_id)
+
+            # the next row of 'update'
+            log_debug('compare two row')
+            buffer_list = compare_two_row(row, next_row, table_name)
+
+            # format to submission
+            for item in buffer_list:
+                buffer = item
+                log_debug('%s', buffer)
+                buffer = "%s, %-20s, %06d, %s, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name, buffer)
+                content += "%s\n" % (buffer)
+
+            if len(buffer_list) == 0:
+                log_info("warn: two rows are the same")
         else:
             log_error('error: invalid oper_type: %s', oper_type)
             return ""
@@ -547,14 +720,18 @@ def export_resource(_task_list):
                 log_info("warn: deal_resource2 not succeeds")
 
             # sub - est_func_param
-            row['res_type_class']   = 'SUBT'
-            row['sub_res_type']     = 'est_func_param'
-            content = deal_subtype_resource(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: sub: deal_resource no data")
+            sub_table_list = MyCtx.main_subt_table_map[res_type]
+            for sub_table in sub_table_list:
+                log_debug('sub_table: %s', sub_table)
+                row['res_type_class']   = 'SUBT'
+                row['sub_res_type']     = sub_table
+                content = deal_subtype_resource(row)
+                if len(content) > 0:
+                    # log_debug("\n%s", content)
+                    fo.write(content)
+                else:
+                    log_info("warn: sub: deal_resource no data")
+
         elif res_type == 'est_enum':
             # log_debug("is enum")
             content = deal_resource2(row)
@@ -564,15 +741,17 @@ def export_resource(_task_list):
             else:
                 log_info("warn: deal_resource2 not succeeds")
 
-            # sub - est_enum_value
-            row['res_type_class']   = 'SUBT'
-            row['sub_res_type']     = 'est_enum_value'
-            content = deal_subtype_resource(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: sub: deal_resource no data")
+            sub_table_list = MyCtx.main_subt_table_map[res_type]
+            for sub_table in sub_table_list:
+                log_debug('sub_table: %s', sub_table)
+                row['res_type_class']   = 'SUBT'
+                row['sub_res_type']     = sub_table
+                content = deal_subtype_resource(row)
+                if len(content) > 0:
+                    # log_debug("\n%s", content)
+                    fo.write(content)
+                else:
+                    log_info("warn: sub: deal_resource no data")
 
         elif res_type == 'est_format':
             # log_debug("is format")
@@ -584,25 +763,40 @@ def export_resource(_task_list):
                 log_info("warn: deal_resource2 not succeeds")
 
 
-            # sub1 - est_fmt_item
-            row['res_type_class']   = 'SUBT'
-            row['sub_res_type']     = 'est_fmt_item'
-            content = deal_subtype_resource(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: sub: deal_resource no data")
+            sub_table_list = MyCtx.main_subt_table_map[res_type]
+            for sub_table in sub_table_list:
+                log_debug('sub_table: %s', sub_table)
+                row['res_type_class']   = 'SUBT'
+                row['sub_res_type']     = sub_table
+                content = deal_subtype_resource(row)
+                if len(content) > 0:
+                    # log_debug("\n%s", content)
+                    fo.write(content)
+                else:
+                    log_info("warn: sub: deal_resource no data")
 
-            # sub2 - est_sign_item
-            row['res_type_class']   = 'SUBT'
-            row['sub_res_type']     = 'est_sign_item'
-            content = deal_subtype_resource(row)
+        elif res_type == 'est_flow':
+            log_debug("is flow")
+            content = deal_resource2(row)
             if len(content) > 0:
                 # log_debug("\n%s", content)
                 fo.write(content)
             else:
-                log_info("warn: sub: deal_resource no data")
+                log_info("warn: deal_resource2 not succeeds")
+
+
+            sub_table_list = MyCtx.main_subt_table_map[res_type]
+            for sub_table in sub_table_list:
+                log_debug('sub_table: %s', sub_table)
+                row['res_type_class']   = 'SUBT'
+                row['sub_res_type']     = sub_table
+                content = deal_subtype_resource(row)
+                if len(content) > 0:
+                    # log_debug("\n%s", content)
+                    fo.write(content)
+                else:
+                    log_info("warn: sub: deal_resource no data")
+
 
         else:
             log_error("error: other resource: [%s]", res_type)

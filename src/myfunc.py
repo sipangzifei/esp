@@ -22,6 +22,8 @@ class MyCtx():
     task_id_uniq= {} # ensure delete once for each task in log-table
     subt_id_uniq= {} # ensure delete once for sub-table
 
+    exp_content = []
+
     log_content = []
     res_content = []
 
@@ -149,6 +151,7 @@ class MyCtx():
         'est_sign_item_log' : ['fmt_id', 'elem_id'],
     }
 
+
     res_cvt_rule_map = {
         'est_element_log-elem_id'       : ['est_element',   'elem_id',  'elem_name'],
 
@@ -173,6 +176,9 @@ class MyCtx():
         'est_fmt_item_log-elem_id'      : ['est_element',   'elem_id',  'elem_name'],
         'est_sign_item_log-fmt_id'      : ['est_format',    'fmt_id',   'fmt_name'],
         'est_sign_item_log-elem_id'     : ['est_element',   'elem_id',  'elem_name'],
+
+        'est_flow_step-GET_RES_ID'      : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_end-GET_RES_ID'        : ['est_flow',      'flow_id',  'flow_name'],
     }
 
 
@@ -193,6 +199,9 @@ class MyCtx():
         'est_enum_value'    :   ['est_enum',      'enum_name'],
         'est_fmt_item'      :   ['est_format',    'fmt_name'],
         'est_sign_item'     :   ['est_format',    'fmt_name'],
+
+        'est_flow_step'     :   ['est_flow',      'flow_name'],
+        'est_flw_end'       :   ['est_flow',      'flow_name'],
     } 
 
     target_project = ''
@@ -689,6 +698,42 @@ def my_get_next_id(_id_type, _cursor):
     return '%05d' % next_id
 
 
+# select flow_id from est_flow where flow_name = 'pub'
+# input -- sub-table-name
+def sub_get_res_id(_sub_table, _res_name, _cursor):
+
+    table_name  = ''  # est_flow
+    res_id_col  = ''  # flow_id
+    res_name_col= ''  # flow_name
+
+    my_key = '%s-GET_RES_ID' % (_sub_table)
+
+    if not MyCtx.res_cvt_rule_map.has_key(my_key):
+        log_error('error: cvt-rule not found: %s', my_key)
+        return ''
+    else:
+        val_list    = MyCtx.res_cvt_rule_map[my_key]
+        table_name  = val_list[0]
+        res_id_col  = val_list[1]
+        res_name_col= val_list[2]
+
+
+    sql = "select %s from %s where %s = '%s'" % (res_id_col, table_name, res_name_col, _res_name)
+    # log_debug('%s', sql)
+
+    _cursor.execute(sql)
+    list0 = _cursor.fetchall()
+    if len(list0) <= 0:
+        log_error('error: no data: %s', sql)
+        return ""
+
+    row = list0[0]
+    res_id = row[res_id_col]
+    log_debug('sub-update res_id [%s => %s]', res_id_col, res_id)
+
+    return res_id
+
+
 
 # select func_name from est_func where func_id = '00234'
 def sub_get_res_name(_sub_table, _log_row, _cursor):
@@ -719,10 +764,6 @@ def sub_get_res_name(_sub_table, _log_row, _cursor):
     log_debug('res_name[%s => %s]', res_name_col, res_name)
 
     return res_name
-
-
-
-
 
 
 
@@ -909,7 +950,7 @@ def pre_process_lines(_lines):
 
         if map1.has_key(key_str):
             # check changed
-            if oper_type != last_oper_type:
+            if (oper_type == 'delete' or last_oper_type == 'delete') and oper_type != last_oper_type:
                 # means changed
 
                 # 1. delete item from MAP
@@ -956,6 +997,24 @@ def pre_process_lines(_lines):
         del _lines[del_idx]
 
     return 0
+
+def convert_to_dict(_words):
+
+    my_dict = {}
+
+    # update
+    if len(_words) == 10:
+        # log_debug('is update dict')
+        my_dict = dict(zip(MyCtx.update_list, _words))
+    # insert/delete
+    elif len(_words) == 7:
+        # log_debug('is short dict')
+        my_dict = dict(zip(MyCtx.insert_list, _words))
+    else:
+        log_error('error: %d -- %s', len(_words), _words)
+        return None
+
+    return my_dict
 
 
 

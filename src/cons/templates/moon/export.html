@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1><a href="{{ url_for('moon.export') }}">Export</a></h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+
+    <label for="tasklist">Task</label>
+    <input name="tasklist_name" id="tasklist_id" value = "{{tasks}}" required>
+
+
+    <input type="submit" value="Generate">
+
+  </form>
+
+  {% for post in result %}
+    <article class="post">
+      <header>
+        <div>
+          <h1>{{ post['name'] }}</h1>
+        </div>
+      </header>
+      <p class="body">{{ post['age'] }}</p>
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+
+
+  {% if mission %}
+      <table border="1">
+      <tr>
+        <th>seq</th>
+        <th>table</th>
+        <th>oper_id</th>
+        <th>oper_date_time</th>
+        <th>task_id</th>
+        <th>oper_type</th>
+        <th>res_name</th>
+        <th>res_column</th>
+        <th>src-val</th>
+        <th>tgt-val</th>
+      </tr>
+  {% endif %}
+
+  {%- for item in mission -%}
+    <tr>
+      <td> {{loop.index}}   </td>
+      <td> {{item.res_table}}   </td>
+      <td> {{item.oper_id}}     </td>
+      <td> {{item.oper_date_time}} </td>
+      <td> {{item.task_id}}     </td>
+      <td> {{item.oper_type_log}} </td>
+      <td> {{item.res_name}}    </td>
+      <td> {{item.res_column}}  </td>
+      <td> {{item.src_val}}     </td>
+      <td> {{item.dst_val}}     </td>
+    </tr>
+  {% endfor %}
+  </table>
+
+{% endblock %}

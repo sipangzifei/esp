@@ -85,7 +85,7 @@ def get_res_log_list(_task_id, _res_name, _res_id, _table):
         log_error('error: get_type_id')
         return []
 
-    sql = """select * from %s
+    sql = """select * from %s 
 where task_id = '%s' and %s = '%s' 
 order by oper_id""" % (log_table, _task_id, type_id, _res_id)
     # log_debug("log: %s", sql)
@@ -399,9 +399,11 @@ def deal_element(_row):
         if oper_type == 'insert':
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, elem_name)
             content += "%s\n" % (buffer)
+            MyCtx.exp_content.append(buffer)
         elif oper_type == 'delete':
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, elem_name)
             content += "%s\n" % (buffer)
+            MyCtx.exp_content.append(buffer)
         elif oper_type == 'update':
             #  get-next-row
             list3 = get_elem_next_record(row, table_name)
@@ -426,6 +428,7 @@ def deal_element(_row):
                     buffer = item
                     buffer = "%s, %-20s, %06d, %s, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, 'update', elem_name, buffer)
                     content += "%s\n" % (buffer)
+                    MyCtx.exp_content.append(buffer)
             else:
                 # next_oper_type is 'insert' means something missed
                 log_error('error: invalid operation after update: %s', next_oper_type)
@@ -482,9 +485,11 @@ def deal_resource2(_row):
         if oper_type == 'insert':
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name)
             content += "%s\n" % (buffer)
+            MyCtx.exp_content.append(buffer)
         elif oper_type == 'delete':
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name)
             content += "%s\n" % (buffer)
+            MyCtx.exp_content.append(buffer)
         elif oper_type == 'update':
             #  get-next-row
             list3 = get_res_next_record(row, table_name)
@@ -508,6 +513,7 @@ def deal_resource2(_row):
                 for item in buffer_list:
                     buffer = item
                     buffer = "%s, %-20s, %06d, %s, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, 'update', res_name, buffer)
+                    MyCtx.exp_content.append(buffer)
                     content += "%s\n" % (buffer)
 
                 if len(buffer_list) == 0:
@@ -628,9 +634,11 @@ def deal_subtype_resource(_row):
         if oper_type == 'insert':
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name)
             content += "%s\n" % (buffer)
+            MyCtx.exp_content.append(buffer)
         elif oper_type == 'delete':
             buffer = "%s, %-20s, %06d, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name)
             content += "%s\n" % (buffer)
+            MyCtx.exp_content.append(buffer)
         elif oper_type == 'update':
             log_error('warn: invalid operation as update: %s', oper_type)
             #  get-next-row
@@ -657,6 +665,7 @@ def deal_subtype_resource(_row):
                 log_debug('%s', buffer)
                 buffer = "%s, %-20s, %06d, %s, %s, %s, %s, %s" % (table_class, table_name, oper_id, oper_date_time, task_id, oper_type, res_name, buffer)
                 content += "%s\n" % (buffer)
+                MyCtx.exp_content.append(buffer)
 
             if len(buffer_list) == 0:
                 log_info("warn: two rows are the same")
@@ -674,7 +683,8 @@ def get_resource_list(_task_list):
 
     where_section = get_map_where_str(_task_list)
 
-    sql = "select distinct task_id, res_type, res_name, res_no from est_taskid_map %s order by 1, 2, 3" % (where_section)
+    # sql = "select distinct task_id, res_type, res_name, res_no from est_taskid_map %s order by 1, 2, 3" % (where_section)
+    sql = "select task_id, res_type, res_no, res_name  from est_taskid_map %s order by cast(map_id as int), 1, 2, 3" % (where_section)
     log_debug(sql)
 
     MyCtx.cursorX.execute(sql)
@@ -682,6 +692,58 @@ def get_resource_list(_task_list):
     list1 = MyCtx.cursorX.fetchall()
 
     return list1
+
+
+def pre_process_resources(_res_list):
+
+    idx      = 0
+    map1     = {}
+    del_list = []
+
+    for row in _res_list:
+        # log_debug(row)
+        task_id     = row['task_id'].strip()
+        res_type    = row['res_type'].strip()
+        res_no      = row['res_no'].strip()
+        res_name    = row['res_name'].strip()
+
+        my_key = '%s-%s-%s' % (task_id, res_type, res_no)
+        my_val = res_name
+        log_debug('%02d: [%s] => [%s]', idx, my_key, my_val)
+
+        if map1.has_key(my_key):
+            that_idx = map1[my_key]
+            del_list.append(that_idx)
+
+        map1[my_key] = idx
+
+        idx += 1
+    log_debug('delete list: %s', del_list)
+
+    del_list.sort(reverse=True)
+    for del_idx in del_list:
+        # log_debug('del: %d', del_idx)
+        del _res_list[del_idx]
+
+    return 0
+
+
+def dump_resources(_res_list):
+
+    for row in _res_list:
+        # log_debug(row)
+        task_id     = row['task_id'].strip()
+        res_type    = row['res_type'].strip()
+        res_no      = row['res_no'].strip()
+        res_name    = row['res_name'].strip()
+
+        my_key = '%s-%s-%s' % (task_id, res_type, res_no)
+        my_val = res_name
+        log_debug('[%s] => [%s]', my_key, my_val)
+
+
+    return 0
+
 
 
 def export_resource(_task_list):
@@ -694,8 +756,11 @@ def export_resource(_task_list):
 
     list1 = get_resource_list(_task_list)
 
-    # for row in list1:
-    #     log_debug(row)
+    pre_process_resources(list1)
+
+    dump_resources(list1)
+
+    # return 0
 
     for row in list1:
         log_debug("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
@@ -704,12 +769,13 @@ def export_resource(_task_list):
         #log_debug('row = %s', (row))
         if res_type == 'est_element':
             # log_debug("is element")
-            content = deal_element(row)
+            # content = deal_element(row)
+            content = deal_resource2(row)
             if len(content) > 0:
                 # log_debug("\n%s", content)
                 fo.write(content)
             else:
-                log_error("error: deal_element failure")
+                log_info("warn: deal_resource2 not succeeds")
         elif res_type == 'est_func':
             # log_debug("is func")
             content = deal_resource2(row)
@@ -913,6 +979,28 @@ def submission_init():
     # DB connection
     MyCtx.connX  = db_init(src_dbname)
     MyCtx.cursorX= MyCtx.connX.cursor(as_dict=True)
+
+    return task_list
+
+# for web
+def submission_init2(_tasks):
+    src_dbname = ''
+
+    task_list = []
+
+    task_list = _tasks.split(',')
+    trim_list(task_list)
+    log_debug('task-list: %s', task_list)
+
+    src_dbname = sai_conf_get('RUNTIME', 'SOURCE').strip()
+    log_debug('source: [%s]', src_dbname)
+
+
+    # DB connection
+    MyCtx.connX  = db_init(src_dbname)
+    MyCtx.cursorX= MyCtx.connX.cursor(as_dict=True)
+
+    MyCtx.exp_content = []
 
     return task_list
 

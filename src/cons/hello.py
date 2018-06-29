@@ -2,6 +2,8 @@ from flask import Flask
 from flask import url_for
 from flask import request
 
+from common  import *
+
 app = Flask(__name__)
 
 @app.route('/h')

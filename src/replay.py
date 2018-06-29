@@ -73,7 +73,7 @@ def generate_new_res_id(_row):
 
 def generate_insert_cm(_tgt_table, _data_table, _oper_id, _get_res_id_mode):
 
-    # SQL -- get target table's column definition
+    # SQL -- get table structure from target DB
     sql   = 'sp_columns %s' % (_tgt_table)
     MyCtx.cursorX.execute(sql)
     list1 = MyCtx.cursorX.fetchall()
@@ -224,6 +224,7 @@ def generate_insert_res(_dict):
 
 def generate_update_res(_dict):
     res_table_name  = get_table_name(_dict)
+    res_name = _dict['res_name']
 
     # get key list
     key_list, cmp_list, dis_list = get_config_list(res_table_name)
@@ -231,10 +232,17 @@ def generate_update_res(_dict):
         log_error("sorry, please config cnf/my.cnf [%s] KEY=xxx", res_table_name)
         return ""
 
+    if _dict['res_table_class'] == 'SUBT':
+        log_debug("update is subt")
+        res_id = sub_get_res_id(res_table_name, res_name, MyCtx.cursorY)
+        log_debug("update subt convert: %s => %s", res_name, res_id)
+        res_name = res_id
+        pass
+
     sql = "update %s set %s = '%s' where %s = '%s'" % \
            (res_table_name, _dict['res_column'],\
             _dict['dst_val'], \
-            key_list[0], _dict['res_name'])
+            key_list[0], res_name)
 
     return sql
 
@@ -260,24 +268,6 @@ def generate_delete_res(_dict):
     return sql
 
 
-
-def convert_to_dict(_words):
-
-    my_dict = {}
-
-    # update
-    if len(_words) == 10:
-        # log_debug('is update dict')
-        my_dict = dict(zip(MyCtx.update_list, _words))
-    # insert/delete
-    elif len(_words) == 7:
-        # log_debug('is short dict')
-        my_dict = dict(zip(MyCtx.insert_list, _words))
-    else:
-        log_error('error')
-        return None
-
-    return my_dict
 
 
 

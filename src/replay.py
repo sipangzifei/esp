@@ -69,8 +69,6 @@ def generate_new_res_id(_row):
 
 
 
-
-
 def generate_insert_cm(_tgt_table, _data_table, _oper_id, _get_res_id_mode):
 
     # SQL -- get table structure from target DB
@@ -115,7 +113,9 @@ def generate_insert_cm(_tgt_table, _data_table, _oper_id, _get_res_id_mode):
     generate_res_id(_tgt_table, log_row, MyCtx.cursorY)
 
     #  query resource-id in target DB
-    convert_res_id(_tgt_table, log_row, MyCtx.cursorX, MyCtx.cursorY)
+    if _get_res_id_mode != 4:
+        # not equal 4 means LOG-table + delete
+        convert_res_id(_tgt_table, log_row, MyCtx.cursorX, MyCtx.cursorY)
 
     # change MAP_ID to 'AUTOM' 2018-5-17
     # this can mark the LOG is inserted by script, instead of real user
@@ -198,7 +198,13 @@ def generate_log_sql(_dict):
     table_name      = get_table_name(_dict)
     log_table_name  = get_log_table_name(table_name)
     oper_id         = _dict['oper_id']
-    get_res_id_mode = 0
+    oper_type       = _dict['oper_type_log']
+    get_res_id_mode = 3
+
+    # mark as delete
+    if oper_type == 'delete':
+        log_debug('log-table meets delete')
+        get_res_id_mode = 4
 
     sql = generate_insert_cm(log_table_name, log_table_name, oper_id, get_res_id_mode)
 

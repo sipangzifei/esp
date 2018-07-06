@@ -79,8 +79,10 @@ class MyCtx():
         'est_fmt_item'      : ['fmt_id'],
         'est_sign_item'     : ['fmt_id'],
 
-        'est_flw_end'       : ['flow_id'],
         'est_flow_step'     : ['flow_id'],
+        'est_flw_end'       : ['flow_id'],
+        'est_flw_process'   : ['flow_id'],
+        'est_flw_component' : ['flow_id'],
 
         'est_comp_param'    : ['comp_id'],
         'est_comp_in_out'   : ['comp_id'],
@@ -93,7 +95,7 @@ class MyCtx():
         'est_func'          : ['est_func_param'],
         'est_enum'          : ['est_enum_value'],
         'est_format'        : ['est_fmt_item', 'est_sign_item'],
-        'est_flow'          : ['est_flw_end', 'est_flow_step'],
+        'est_flow'          : ['est_flw_end', 'est_flow_step', 'est_flw_process', 'est_flw_component'],
         'est_component'     : ['est_comp_param', 'est_comp_in_out', 'est_comp_nesting'],
     }
 
@@ -133,6 +135,8 @@ class MyCtx():
 
         'est_format'        : ['fmt_id'],
 
+        'est_flow'          : ['flow_id'],
+
         'est_component'     : ['comp_id'],
     }
 
@@ -150,24 +154,34 @@ class MyCtx():
     # convert res-id for foreign-key dependant
     # list_map + rule_map work together
     res_cvt_list_map = {
-        'est_element_log'   : ['elem_id'],
+        'est_element_log'       : ['elem_id'],
 
-        'est_func_log'      : ['func_id'],
-        'est_func_param'    : ['func_id'],
-        'est_func_param_log': ['func_id'],
+        'est_func_log'          : ['func_id'],
+        'est_func_param'        : ['func_id'],
+        'est_func_param_log'    : ['func_id'],
 
-        'est_enum'          : ['enum_fmem_id', 'enum_smem_id'],
-        'est_enum_log'      : ['enum_id', 'enum_fmem_id', 'enum_smem_id'],
-        'est_enum_value'    : ['enum_id'],
-        'est_enum_value_log': ['enum_id'],
+        'est_enum'              : ['enum_fmem_id', 'enum_smem_id'],
+        'est_enum_log'          : ['enum_id', 'enum_fmem_id', 'enum_smem_id'],
+        'est_enum_value'        : ['enum_id'],
+        'est_enum_value_log'    : ['enum_id'],
 
-        'est_format_log'    : ['fmt_id'],
-        'est_fmt_item'      : ['fmt_id', 'elem_id'],
-        'est_sign_item'     : ['fmt_id', 'elem_id'],
-        'est_fmt_item_log'  : ['fmt_id', 'elem_id'],
-        'est_sign_item_log' : ['fmt_id', 'elem_id'],
+        'est_format_log'        : ['fmt_id'],
+        'est_fmt_item'          : ['fmt_id', 'elem_id'],
+        'est_sign_item'         : ['fmt_id', 'elem_id'],
+        'est_fmt_item_log'      : ['fmt_id', 'elem_id'],
+        'est_sign_item_log'     : ['fmt_id', 'elem_id'],
 
-        # TODO: flow
+        # flow
+        'est_flow'              : ['retcode_elem', 'retmsg_elem'],
+        'est_flow_log'          : ['flow_id', 'retcode_elem', 'retmsg_elem'],
+        'est_flow_step'         : ['flow_id'],
+        'est_flow_step_log'     : ['flow_id'],
+        'est_flw_end'           : ['flow_id'],
+        'est_flw_end_log'       : ['flow_id'],
+        'est_flw_process'       : ['flow_id'],
+        'est_flw_process_log'   : ['flow_id'],
+        'est_flw_component'     : ['flow_id', 'comp_expr_id'],
+        'est_flw_component_log' : ['flow_id', 'comp_expr_id'],
 
         # component
         'est_component_log'     : ['comp_id'],
@@ -212,6 +226,22 @@ class MyCtx():
         'est_flow_step-GET_RES_ID'              : ['est_flow',      'flow_id',  'flow_name'],
         'est_flw_end-GET_RES_ID'                : ['est_flow',      'flow_id',  'flow_name'],
 
+        'est_flow-retcode_elem'                 : ['est_element',   'elem_id',  'elem_name'],
+        'est_flow-retmsg_elem'                  : ['est_element',   'elem_id',  'elem_name'],
+        'est_flow_log-flow_id'                  : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flow_log-retcode_elem'             : ['est_element',   'elem_id',  'elem_name'],
+        'est_flow_log-retmsg_elem'              : ['est_element',   'elem_id',  'elem_name'],
+        'est_flow_step-flow_id'                 : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flow_step_log-flow_id'             : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_end-flow_id'                   : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_end_log-flow_id'               : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_process-flow_id'               : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_process_log-flow_id'           : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_component-flow_id'             : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_component-comp_expr_id'        : ['est_component', 'comp_id',  'comp_name'], 
+        'est_flw_component_log-flow_id'         : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_component_log-comp_expr_id'    : ['est_component', 'comp_id',  'comp_name'],
+
         # component
         'est_component_log-comp_id'             : ['est_component', 'comp_id',  'comp_name'],
         'est_comp_param-comp_id'                : ['est_component', 'comp_id',  'comp_name'],
@@ -255,6 +285,8 @@ class MyCtx():
 
         'est_flow_step'     :   ['est_flow',      'flow_name'],
         'est_flw_end'       :   ['est_flow',      'flow_name'],
+        'est_flw_process'   :   ['est_flow',      'flow_name'],
+        'est_flw_component' :   ['est_flow',      'flow_name'],
 
         'est_comp_in_out'   :   ['est_component', 'comp_name'],
         'est_comp_param'    :   ['est_component', 'comp_name'],

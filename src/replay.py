@@ -174,9 +174,11 @@ def delete_sub_resource(_table, _res_name):
     sub_table   = _table # est_func_param
     sub_key     = sai_conf_get(sub_table, 'KEY') # func_id
 
+    """
     if not MyCtx.sub_main_table_map.has_key(sub_table):
         log_error('error: sub_main_table_map not find [%s]', sub_table)
         raise  Exception
+    """
 
     main_list   = MyCtx.sub_main_table_map[sub_table]
     main_table  = main_list[0] # est_func

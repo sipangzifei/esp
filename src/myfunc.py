@@ -40,14 +40,19 @@ class MyCtx():
         'est_element'       : ['elem_id'],
         'est_func'          : ['func_id'],
         'est_enum'          : ['enum_id'],
+
         'est_format'        : ['fmt_id'],
+
         'est_flow'          : ['flow_id'],
         'est_flw_end'       : ['flow_id'],
         'est_flow_step'     : ['flow_id'],
+
+        'est_component'     : ['comp_id'],
     }
 
 
     # primary key and unique-index of table
+    """
     main_table_key_map2 = {
         'est_element'       : ['elem_name', 'elem_id'],
         'est_func'          : ['func_name', 'func_id'],
@@ -55,6 +60,7 @@ class MyCtx():
         'est_format'        : ['fmt_name',  'fmt_id'],
         'est_flow'          : ['flow_name', 'flow_id'],
     }
+    """
 
 
     # primary key for sub-tables
@@ -75,14 +81,20 @@ class MyCtx():
 
         'est_flw_end'       : ['flow_id'],
         'est_flow_step'     : ['flow_id'],
+
+        'est_comp_param'    : ['comp_id'],
+        'est_comp_in_out'   : ['comp_id'],
+        'est_comp_nesting'  : ['comp_id'],
     }
 
 
     main_subt_table_map = {
+        'est_element'       : [],
         'est_func'          : ['est_func_param'],
         'est_enum'          : ['est_enum_value'],
         'est_format'        : ['est_fmt_item', 'est_sign_item'],
         'est_flow'          : ['est_flw_end', 'est_flow_step'],
+        'est_component'     : ['est_comp_param', 'est_comp_in_out', 'est_comp_nesting'],
     }
 
 
@@ -107,6 +119,7 @@ class MyCtx():
         'est_func'          : ['relation_id'],
         'est_enum'          : ['relation_id'],
         'est_format'        : ['relation_id'],
+        'est_component'     : ['relation_id'],
     }
 
 
@@ -119,6 +132,8 @@ class MyCtx():
         'est_enum'          : ['enum_id'],
 
         'est_format'        : ['fmt_id'],
+
+        'est_component'     : ['comp_id'],
     }
 
     new_res_id  = ''
@@ -127,11 +142,13 @@ class MyCtx():
         'func_id'   :   '08',
         'enum_id'   :   '25',
         'fmt_id'    :   '03',
+        'flow_id'   :   '11',
+        'comp_id'   :   '26',
     }
 
 
     # convert res-id for foreign-key dependant
-    # list_map + rule_map
+    # list_map + rule_map work together
     res_cvt_list_map = {
         'est_element_log'   : ['elem_id'],
 
@@ -149,39 +166,74 @@ class MyCtx():
         'est_sign_item'     : ['fmt_id', 'elem_id'],
         'est_fmt_item_log'  : ['fmt_id', 'elem_id'],
         'est_sign_item_log' : ['fmt_id', 'elem_id'],
+
+        # TODO: flow
+
+        # component
+        'est_component_log'     : ['comp_id'],
+        'est_comp_param'        : ['comp_id', 'func_id'],
+        'est_comp_in_out'       : ['comp_id', 'elem_id'],
+        'est_comp_nesting'      : ['comp_id', 'comp_nesting_id', 'source_elem_id', 'dest_elem_id'],
+        'est_comp_param_log'    : ['comp_id', 'func_id'],
+        'est_comp_in_out_log'   : ['comp_id', 'elem_id'],
+        'est_comp_nesting_log'  : ['comp_id', 'comp_nesting_id', 'source_elem_id', 'dest_elem_id'],
+
+
     }
 
 
     res_cvt_rule_map = {
-        'est_element_log-elem_id'       : ['est_element',   'elem_id',  'elem_name'],
+        'est_element_log-elem_id'               : ['est_element',   'elem_id',  'elem_name'],
 
-        'est_func_log-func_id'          : ['est_func',      'func_id',  'func_name'],
-        'est_func_param-func_id'        : ['est_func',      'func_id',  'func_name'],
-        'est_func_param_log-func_id'    : ['est_func',      'func_id',  'func_name'],
+        'est_func_log-func_id'                  : ['est_func',      'func_id',  'func_name'],
+        'est_func_param-func_id'                : ['est_func',      'func_id',  'func_name'],
+        'est_func_param_log-func_id'            : ['est_func',      'func_id',  'func_name'],
 
-        'est_enum-enum_fmem_id'         : ['est_element',   'elem_id',  'elem_name'],
-        'est_enum-enum_smem_id'         : ['est_element',   'elem_id',  'elem_name'],
-        'est_enum_log-enum_id'          : ['est_enum',      'enum_id',  'enum_name'],
-        'est_enum_log-enum_fmem_id'     : ['est_element',   'elem_id',  'elem_name'],
-        'est_enum_log-enum_smem_id'     : ['est_element',   'elem_id',  'elem_name'],
-        'est_enum_value-enum_id'        : ['est_enum',      'enum_id',  'enum_name'],
-        'est_enum_value_log-enum_id'    : ['est_enum',      'enum_id',  'enum_name'],
+        'est_enum-enum_fmem_id'                 : ['est_element',   'elem_id',  'elem_name'],
+        'est_enum-enum_smem_id'                 : ['est_element',   'elem_id',  'elem_name'],
+        'est_enum_log-enum_id'                  : ['est_enum',      'enum_id',  'enum_name'],
+        'est_enum_log-enum_fmem_id'             : ['est_element',   'elem_id',  'elem_name'],
+        'est_enum_log-enum_smem_id'             : ['est_element',   'elem_id',  'elem_name'],
+        'est_enum_value-enum_id'                : ['est_enum',      'enum_id',  'enum_name'],
+        'est_enum_value_log-enum_id'            : ['est_enum',      'enum_id',  'enum_name'],
 
-        'est_format_log-fmt_id'         : ['est_format',    'fmt_id',   'fmt_name'],
-        'est_fmt_item-fmt_id'           : ['est_format',    'fmt_id',   'fmt_name'],
-        'est_fmt_item-elem_id'          : ['est_element',   'elem_id',  'elem_name'],
-        'est_sign_item-fmt_id'          : ['est_format',    'fmt_id',   'fmt_name'],
-        'est_sign_item-elem_id'         : ['est_element',   'elem_id',  'elem_name'],
-        'est_fmt_item_log-fmt_id'       : ['est_format',    'fmt_id',   'fmt_name'],
-        'est_fmt_item_log-elem_id'      : ['est_element',   'elem_id',  'elem_name'],
-        'est_sign_item_log-fmt_id'      : ['est_format',    'fmt_id',   'fmt_name'],
-        'est_sign_item_log-elem_id'     : ['est_element',   'elem_id',  'elem_name'],
+        # format
+        'est_format_log-fmt_id'                 : ['est_format',    'fmt_id',   'fmt_name'],
+        'est_fmt_item-fmt_id'                   : ['est_format',    'fmt_id',   'fmt_name'],
+        'est_fmt_item-elem_id'                  : ['est_element',   'elem_id',  'elem_name'],
+        'est_sign_item-fmt_id'                  : ['est_format',    'fmt_id',   'fmt_name'],
+        'est_sign_item-elem_id'                 : ['est_element',   'elem_id',  'elem_name'],
+        'est_fmt_item_log-fmt_id'               : ['est_format',    'fmt_id',   'fmt_name'],
+        'est_fmt_item_log-elem_id'              : ['est_element',   'elem_id',  'elem_name'],
+        'est_sign_item_log-fmt_id'              : ['est_format',    'fmt_id',   'fmt_name'],
+        'est_sign_item_log-elem_id'             : ['est_element',   'elem_id',  'elem_name'],
 
-        'est_flow_step-GET_RES_ID'      : ['est_flow',      'flow_id',  'flow_name'],
-        'est_flw_end-GET_RES_ID'        : ['est_flow',      'flow_id',  'flow_name'],
+        # flow
+        'est_flow_step-GET_RES_ID'              : ['est_flow',      'flow_id',  'flow_name'],
+        'est_flw_end-GET_RES_ID'                : ['est_flow',      'flow_id',  'flow_name'],
+
+        # component
+        'est_component_log-comp_id'             : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_param-comp_id'                : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_param-func_id'                : ['est_func',      'func_id',  'func_name'],
+        'est_comp_in_out-comp_id'               : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_in_out-elem_id'               : ['est_element',   'elem_id',  'elem_name'],
+        'est_comp_param_log-comp_id'            : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_param_log-func_id'            : ['est_func',      'func_id',  'func_name'],
+        'est_comp_in_out_log-comp_id'           : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_in_out_log-elem_id'           : ['est_element',   'elem_id',  'elem_name'],
+        'est_comp_nesting-comp_id'              : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_nesting-comp_nesting_id'      : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_nesting-source_elem_id'       : ['est_element',   'elem_id',  'elem_name'],
+        'est_comp_nesting-dest_elem_id'         : ['est_element',   'elem_id',  'elem_name'],
+        'est_comp_nesting_log-comp_id'          : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_nesting_log-comp_nesting_id'  : ['est_component', 'comp_id',  'comp_name'],
+        'est_comp_nesting_log-source_elem_id'   : ['est_element',   'elem_id',  'elem_name'],
+        'est_comp_nesting_log-dest_elem_id'     : ['est_element',   'elem_id',  'elem_name'],
     }
 
 
+    """
     # for TARGET db
     sub_res_id_map  = {
         'est_func_param': ['est_func', 'func_id', 'func_name']
@@ -191,9 +243,10 @@ class MyCtx():
     sub_res_name_map  = {
         'est_func_param': ['est_func', 'func_name', 'func_id']
     }
+    """
 
 
-    # from delete
+    # for delete
     sub_main_table_map  = {
         'est_func_param'    :   ['est_func',      'func_name'],
         'est_enum_value'    :   ['est_enum',      'enum_name'],
@@ -202,6 +255,10 @@ class MyCtx():
 
         'est_flow_step'     :   ['est_flow',      'flow_name'],
         'est_flw_end'       :   ['est_flow',      'flow_name'],
+
+        'est_comp_in_out'   :   ['est_component', 'comp_name'],
+        'est_comp_param'    :   ['est_component', 'comp_name'],
+        'est_comp_nesting'  :   ['est_component', 'comp_name'],
     } 
 
     target_project = ''
@@ -736,6 +793,7 @@ def sub_get_res_id(_sub_table, _res_name, _cursor):
 
 
 # select func_name from est_func where func_id = '00234'
+"""
 def sub_get_res_name(_sub_table, _log_row, _cursor):
     res_name = ''
 
@@ -764,8 +822,7 @@ def sub_get_res_name(_sub_table, _log_row, _cursor):
     log_debug('res_name[%s => %s]', res_name_col, res_name)
 
     return res_name
-
-
+"""
 
 
 

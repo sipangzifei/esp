@@ -560,12 +560,8 @@ def get_sub_type_id_group(_table):
 
     my_key = _table
 
-    if MyCtx.subt_table_group_key_map.has_key(my_key):
-        sub_key_list= MyCtx.subt_table_group_key_map[my_key]
-        key_column  = sub_key_list[0]
-    else:
-        log_error("error: not found: [%s]", my_key)
-        key_column = -1
+    sub_key_list= MyCtx.subt_table_group_key_map[my_key]
+    key_column  = sub_key_list[0]
 
 
     return key_column
@@ -767,105 +763,28 @@ def export_resource(_task_list):
         res_type = row['res_type'].strip()
         row['res_type_class']   = 'MAIN'
         #log_debug('row = %s', (row))
-        if res_type == 'est_element':
-            # log_debug("is element")
-            # content = deal_element(row)
-            content = deal_resource2(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: deal_resource2 not succeeds")
-        elif res_type == 'est_func':
-            # log_debug("is func")
-            content = deal_resource2(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: deal_resource2 not succeeds")
 
-            # sub - est_func_param
-            sub_table_list = MyCtx.main_subt_table_map[res_type]
-            for sub_table in sub_table_list:
-                log_debug('sub_table: %s', sub_table)
-                row['res_type_class']   = 'SUBT'
-                row['sub_res_type']     = sub_table
-                content = deal_subtype_resource(row)
-                if len(content) > 0:
-                    # log_debug("\n%s", content)
-                    fo.write(content)
-                else:
-                    log_info("warn: sub: deal_resource no data")
+        log_debug("is [%s]", res_type)
 
-        elif res_type == 'est_enum':
-            # log_debug("is enum")
-            content = deal_resource2(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: deal_resource2 not succeeds")
-
-            sub_table_list = MyCtx.main_subt_table_map[res_type]
-            for sub_table in sub_table_list:
-                log_debug('sub_table: %s', sub_table)
-                row['res_type_class']   = 'SUBT'
-                row['sub_res_type']     = sub_table
-                content = deal_subtype_resource(row)
-                if len(content) > 0:
-                    # log_debug("\n%s", content)
-                    fo.write(content)
-                else:
-                    log_info("warn: sub: deal_resource no data")
-
-        elif res_type == 'est_format':
-            # log_debug("is format")
-            content = deal_resource2(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: deal_resource2 not succeeds")
-
-
-            sub_table_list = MyCtx.main_subt_table_map[res_type]
-            for sub_table in sub_table_list:
-                log_debug('sub_table: %s', sub_table)
-                row['res_type_class']   = 'SUBT'
-                row['sub_res_type']     = sub_table
-                content = deal_subtype_resource(row)
-                if len(content) > 0:
-                    # log_debug("\n%s", content)
-                    fo.write(content)
-                else:
-                    log_info("warn: sub: deal_resource no data")
-
-        elif res_type == 'est_flow':
-            log_debug("is flow")
-            content = deal_resource2(row)
-            if len(content) > 0:
-                # log_debug("\n%s", content)
-                fo.write(content)
-            else:
-                log_info("warn: deal_resource2 not succeeds")
-
-
-            sub_table_list = MyCtx.main_subt_table_map[res_type]
-            for sub_table in sub_table_list:
-                log_debug('sub_table: %s', sub_table)
-                row['res_type_class']   = 'SUBT'
-                row['sub_res_type']     = sub_table
-                content = deal_subtype_resource(row)
-                if len(content) > 0:
-                    # log_debug("\n%s", content)
-                    fo.write(content)
-                else:
-                    log_info("warn: sub: deal_resource no data")
-
-
+        content = deal_resource2(row)
+        if len(content) > 0:
+            # log_debug("\n%s", content)
+            fo.write(content)
         else:
-            log_error("error: other resource: [%s]", res_type)
+            log_info("warn: deal_resource2 not succeeds")
+
+
+        sub_table_list = MyCtx.main_subt_table_map[res_type]
+        for sub_table in sub_table_list:
+            log_debug('sub_table: %s', sub_table)
+            row['res_type_class']   = 'SUBT'
+            row['sub_res_type']     = sub_table
+            content = deal_subtype_resource(row)
+            if len(content) > 0:
+                # log_debug("\n%s", content)
+                fo.write(content)
+            else:
+                log_info("warn: sub: deal_resource no data")
 
 
     fo.close()

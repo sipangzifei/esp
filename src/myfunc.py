@@ -51,6 +51,22 @@ class MyCtx():
     }
 
 
+    # unique index of table
+    table_unique_index_map = {
+        'est_element'       : ['elem_name'],
+        'est_func'          : ['func_name'],
+        'est_enum'          : ['enum_name'],
+
+        'est_format'        : ['fmt_name'],
+
+        'est_flow'          : ['flow_name'],
+        'est_flw_end'       : ['flow_name'],
+        'est_flow_step'     : ['flow_name'],
+
+        'est_component'     : ['comp_name'],
+    }
+
+
     # primary key and unique-index of table
     """
     main_table_key_map2 = {
@@ -388,15 +404,23 @@ def get_type_id(_table):
 
     my_key = _table
 
-    if MyCtx.table_key_map.has_key(my_key):
-        key_list = MyCtx.table_key_map[my_key]
-    else:
-        log_error('error: [%s] not configured', my_key)
-        return -1
+    key_list = MyCtx.table_key_map[my_key]
 
     type_id   = key_list[0]
 
     return type_id
+
+
+# 2018-7-9
+def get_type_name(_table):
+
+    my_key = _table
+
+    key_list = MyCtx.table_unique_index_map[my_key]
+
+    type_name   = key_list[0]
+
+    return type_name
 
 
 #
@@ -497,6 +521,41 @@ def export_from_table(_table_name, _where, _cursor):
     return content_list
 
 
+
+#
+def special_process_resno(_list):
+
+    res_no      = _list[-1].strip()
+    res_name    = _list[-2]
+    table       = _list[-3]
+
+    # log_debug("res-no: %s, table: %s, res: %s", res_no, table, res_name)
+
+    type_id     = get_type_id(table)
+    if type_id == -1:
+        log_error('error: get_type_id')
+        return -1
+
+    type_name   = get_type_name(table)
+    if type_name == -1:
+        log_error('error: get_type_name')
+        return -1
+
+    sql = "select %s from %s where %s = '%s'" % (type_id, table, type_name, res_name)
+    # log_debug('%s', sql)
+
+    MyCtx.cursorY.execute(sql)
+    list1 = MyCtx.cursorY.fetchall()
+
+    if len(list1) > 0:
+        row   = list1[0]
+        new_res_no = row[type_id]
+        log_debug('res-no: %s => %s', res_no, new_res_no)
+        _list[-1] = new_res_no
+
+    return 0
+
+
 # system
 # list ==> db.table
 def sys_import_to_table(_line_list, _table_name, _cursor, _ignore_duplicate):
@@ -520,6 +579,11 @@ def sys_import_to_table(_line_list, _table_name, _cursor, _ignore_duplicate):
 
         value_list = item.split(line_seperator)
         # log_debug('%s -- %s', value_list, value_list[3])
+
+        if _table_name == 'est_taskid_map':
+            # log_debug('before-list: %s', value_list)
+            special_process_resno(value_list)
+            # log_debug('after -list: %s', value_list)
 
         for i in range(len(value_list)):
             value_list[i] = "'" + value_list[i].strip().decode(charset) + "'"
@@ -825,36 +889,34 @@ def sub_get_res_id(_sub_table, _res_name, _cursor):
 
 
 # select func_name from est_func where func_id = '00234'
-"""
-def sub_get_res_name(_sub_table, _log_row, _cursor):
-    res_name = ''
-
-    if not MyCtx.sub_res_name_map.has_key(_sub_table):
-        log_error('error: sub_get_res_name: %s', _sub_table)
-        return -1
-
-    val_list = MyCtx.sub_res_name_map[_sub_table]
-
-    main_table  = val_list[0]
-    res_name_col= val_list[1]
-    res_id_col  = val_list[2]
-    res_id_val  = _log_row[res_id_col]
-
-    sql = "select %s from %s where %s = '%s'" % (res_name_col, main_table, res_id_col, res_id_val)
-    log_debug('[%s]', sql)
-
-    _cursor.execute(sql)
-    list0 = _cursor.fetchall()
-    if len(list0) <= 0:
-        log_error('error: no data: %s', sql)
-        return res_name
-
-    row = list0[0]
-    res_name = row[res_name_col]
-    log_debug('res_name[%s => %s]', res_name_col, res_name)
-
-    return res_name
-"""
+#def sub_get_res_name(_sub_table, _log_row, _cursor):
+#    res_name = ''
+#
+#    if not MyCtx.sub_res_name_map.has_key(_sub_table):
+#        log_error('error: sub_get_res_name: %s', _sub_table)
+#        return -1
+#
+#    val_list = MyCtx.sub_res_name_map[_sub_table]
+#
+#    main_table  = val_list[0]
+#    res_name_col= val_list[1]
+#    res_id_col  = val_list[2]
+#    res_id_val  = _log_row[res_id_col]
+#
+#    sql = "select %s from %s where %s = '%s'" % (res_name_col, main_table, res_id_col, res_id_val)
+#    log_debug('[%s]', sql)
+#
+#    _cursor.execute(sql)
+#    list0 = _cursor.fetchall()
+#    if len(list0) <= 0:
+#        log_error('error: no data: %s', sql)
+#        return res_name
+#
+#    row = list0[0]
+#    res_name = row[res_name_col]
+#    log_debug('res_name[%s => %s]', res_name_col, res_name)
+#
+#    return res_name
 
 
 

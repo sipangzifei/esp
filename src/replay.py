@@ -470,6 +470,7 @@ def replay_taskid_map(_date):
     fo.close()
 
 
+
     try:
         table = 'est_taskid_map'
 
@@ -566,14 +567,16 @@ def replay_doit():
         log_error('error: replay_taskid')
         return -1
 
-    log_debug('--- MAP ---')
-    if replay_taskid_map(file_date) < 0:
-        log_error('error: replay_taskid_map')
-        return -1
 
     log_debug('--- LOG && RES ---')
     if replay_log_and_res(file_date) < 0:
         log_error('error: replay_log_and_res')
+        return -1
+
+
+    log_debug('--- MAP ---')
+    if replay_taskid_map(file_date) < 0:
+        log_error('error: replay_taskid_map')
         return -1
 
     return 0

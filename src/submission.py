@@ -75,8 +75,35 @@ def get_elem_next_record(_row, _table):
 
 
 
-# 2018-6-12
+# 2018-7-9
+# where task_id='JIRA-01' and elem_name='DEMO_NAME'
 def get_res_log_list(_task_id, _res_name, _res_id, _table):
+    log_table = '%s_log' % (_table)
+
+    # get name as 'elem_name'
+    type_name = get_type_name(_table)
+    if type_name == -1:
+        log_error('error: get_type_name')
+        return []
+
+    sql = """select * from %s 
+where task_id = '%s' and %s = '%s' 
+order by oper_id""" % (log_table, _task_id, type_name, _res_name)
+    # log_debug("log: %s", sql)
+
+    MyCtx.cursorX.execute(sql)
+
+    listx = MyCtx.cursorX.fetchall()
+
+    if len(listx) == 0:
+        log_error('warn-no-data: %s', sql)
+
+    return listx
+
+
+# 2018-6-12
+# where task_id='JIRA-01' and elem_id='00098'
+def get_res_log_list1(_task_id, _res_name, _res_id, _table):
     log_table = '%s_log' % (_table)
 
     # get id as 'elem_id'
@@ -455,10 +482,10 @@ def deal_resource2(_row):
     table_class = _row['res_type_class'].strip()
 
 
-    log_debug("task_id   = [%s]", task_id)
-    log_debug("res_id    = [%s]", res_id)
-    log_debug("res_name  = [%s]", res_name)
-    log_debug("table     = [%s]", table_name)
+    log_debug(" task_id   = [%s]", task_id)
+    log_debug(" res_id    = [%s]", res_id)
+    log_debug(" res_name  = [%s]", res_name)
+    log_debug(" table     = [%s]", table_name)
 
 
     # query record from LOG table

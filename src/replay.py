@@ -85,26 +85,6 @@ def generate_insert_cm(_tgt_table, _data_table, _oper_id, _get_res_id_mode):
         return ""
     log_row = list2[0]
 
-    """
-    # use new RELATION_ID 2018-5-10
-    # log_debug(log_row)
-    if convert_to_new_rel_id(log_row) < 0:
-        log_error('error: convert_to_new_rel_id')
-        return ""
-
-    # mode: 1, id-table; 2, main-table
-    if _get_res_id_mode == 1:
-        # use new RES_ID:ELEM_ID 2018-5-10
-        # log_debug('need to convert res id')
-        generate_new_res_id(log_row)
-#   elif _get_res_id_mode == 2:
-#       # get the res_id(like func_id) from target db by res_name(like func_name)
-#       log_debug('sub-insert')
-#       # query_current_res_id(_tgt_table, log_row, MyCtx.cursorX, MyCtx.cursorY)
-    else:
-        # log_debug('no need to convert res id')
-        pass
-    """
 
     #  convert new relation-id
     convert_relation_id(_tgt_table, log_row, MyCtx.cursorX, MyCtx.cursorY)

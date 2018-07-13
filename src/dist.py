@@ -53,6 +53,7 @@ def dist_generate_res_id(_table, _cursor):
     gen_newid_list_map = {
         'est_sub_bus'       : ['sub_bus_id',    '19'],
         'est_svc_logic'     : ['service_id',    '10'],
+        'est_event_expr'    : ['event_expr_id', '28'],
     }
 
 
@@ -121,8 +122,8 @@ def dist_generate_res_desc(_table, _seq):
 
     gen_newdesc_list_map = {
         'est_sub_bus'   : 'sub_bus_desc',
-        'est_svc_logic' : 'svc_desc',
     }
+    #   'est_svc_logic' : 'svc_desc',
 
     my_key = '%s' % (_table)
 
@@ -134,6 +135,123 @@ def dist_generate_res_desc(_table, _seq):
     suffix = '%03d' % (_seq)
 
     return col_name, suffix
+
+
+
+def dist_generate_event_one(_event_id):
+
+    table = 'est_event_expr'
+
+    sql_list = []
+
+    ###################################################################
+    # DB/mem -- get table structure
+    if len(MyCtx.event_list) == 0:
+        log_info('query table structure')
+        sql   = 'sp_columns %s' % (table)
+        MyCtx.cursorX.execute(sql)
+        list1 = MyCtx.cursorX.fetchall()
+        MyCtx.event_list = list1
+    else:
+        list1 = MyCtx.event_list
+        log_info('get table structure')
+
+    ###################################################################
+    # DB -- get source table's data
+    key_column = 'event_expr_id'
+    sql   = "select * from %s where %s = '%s'" % (table, key_column , _event_id)
+    MyCtx.cursorX.execute(sql)
+    list2 = MyCtx.cursorX.fetchall()
+    if len(list2) <= 0:
+        log_info('warn: event no data: %s', sql)
+        return '', []
+
+    ###################################################################
+    # DB -- generate new resource-id
+    event_col, new_event_id = dist_generate_res_id(table, MyCtx.cursorX)
+    if len(new_event_id) <= 0:
+        log_info('error: no new event id: %s', table)
+        raise Exception
+
+    ###################################################################
+    for data_row in list2:
+
+        log_debug('CHANGE-event: [%s][%s] [%s] => [%s]', event_col, data_row['serial_no'],  data_row[event_col], new_event_id)
+        data_row[event_col] = new_event_id
+
+        column_name_list    = []
+        column_value_list   = []
+        for row in list1:
+            column_name = row['COLUMN_NAME']
+            column_type = row['TYPE_NAME']
+
+            if data_row[column_name] is None:
+                column_value= "null"
+            else:
+                column_value= "'" + str(data_row[column_name]).strip() + "'"
+
+            if column_type == 'int identity':
+                # log_debug('%s -- %s', column_name, column_type)
+                continue
+
+            column_name_list.append(column_name)
+            column_value_list.append(column_value)
+            # log_debug('[%s] => [%s]', column_name, column_value)
+
+        buf1 = ', '.join(column_name_list)
+
+        buf2 = ', '.join(column_value_list)
+
+        sql = "insert into %s (%s) values (%s)" % (table, buf1, buf2)
+        sql_list.append(sql)
+        log_debug('\n%s', sql)
+
+
+    return new_event_id, sql_list
+
+
+
+def dist_generate_event(_table, _row):
+
+    gen_newevent_list_map = {
+        'est_sub_bus'   : ['start_init_proc', 'svc_pre_proc', 'svc_succ_proc', 'svc_fail_proc', 'term_proc', 'revs_init', 'revs_cond'],
+        'est_svc_logic' : ['svc_succ_proc', 'svc_lost_proc', 'svc_pre_proc', 'revs_init'],
+        'est_svc_proc'  : ['bef_proc', 'aft_proc', 'fail_proc', 'step_proc', 'comps_init_proc', 'comps_end_proc'],
+    }
+
+    my_key = '%s' % (_table)
+
+    if not gen_newevent_list_map.has_key(my_key):
+        return 1
+
+    val_list = gen_newevent_list_map[my_key]
+
+    for item in val_list:
+        cur_event_id = _row[item]
+
+
+        if cur_event_id is None or len(cur_event_id) == 0:
+            continue
+
+        cur_event_id = str(cur_event_id)
+
+        if len(cur_event_id) == 5 and cur_event_id.isdigit():
+            log_debug('%s ==> %s ==> %s', _table, item, cur_event_id)
+
+            new_event_id, sql = dist_generate_event_one(cur_event_id)
+            if len(new_event_id) <= 0:
+                log_info('warn: event-expr(%s) exists ever, but already cleared. [%s.%s => %s]', cur_event_id, _table, item, cur_event_id)
+
+            _row[item] = new_event_id
+
+            for one in sql:
+                MyCtx.cursorX.execute(one)
+
+            log_debug('event-id: %s ==> [%s] ==> [%s]', item, cur_event_id, new_event_id)
+        else:
+            log_debug('ignore Event-id: [%s]', cur_event_id)
+
+    return 0
 
 
 
@@ -225,6 +343,12 @@ def dist_generate_insert_cm(_table, _key_value, _seq):
         if len(cvt_res_id) > 0:
             log_debug('CHANGE-id2: [%s] => [%s]', data_row[res_id_col], cvt_res_id)
             data_row[res_id_col] = cvt_res_id
+
+        # convert event-id
+        rv = dist_generate_event(_table, data_row)
+        if rv < 0:
+            log_error('error: dist_generate_event: %s', _table)
+            return []
 
 
         column_name_list    = []
@@ -351,13 +475,14 @@ def dist_duplicate_sub_bus(_ala_name, _seq):
 # 
 def dist_init():
     src_dbname = 'DEV'
+    src_dbname = 'PCIP'
 
     tasks = ''
 
     args = sai_get_args()
 
     if len(args) == 0:
-        tasks = 'DEMO_ALA1'
+        tasks = 'TPP_PAY'
     else:
         tasks = args[0]
 
